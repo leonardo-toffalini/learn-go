@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -20,7 +19,7 @@ var addCmd = &cobra.Command{
 }
 
 func addFunc(cmd *cobra.Command, args []string) {
-	f, err := os.OpenFile("todo_list.csv", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644) // NOTE: mode shoule be os.ModeAppend
+	f, err := os.OpenFile("todo_list.csv", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		fmt.Println("Error opening todo_list.csv file")
 		return
@@ -28,22 +27,6 @@ func addFunc(cmd *cobra.Command, args []string) {
 	defer f.Close()
 
 	w := csv.NewWriter(f)
-	r := csv.NewReader(f)
-
-	existingRecords, err := r.ReadAll()
-	if err != nil && err.Error() != "EOF" {
-		fmt.Printf("Error reading file: %v\n", err)
-		return
-	}
-
-	nextID := 1
-	if len(existingRecords) > 0 {
-		lastRow := existingRecords[len(existingRecords)-1]
-		lastID, err := strconv.Atoi(lastRow[0])
-		if err == nil {
-			nextID = lastID + 1
-		}
-	}
 
 	fileInfo, err := f.Stat()
 	if err != nil {
@@ -52,7 +35,7 @@ func addFunc(cmd *cobra.Command, args []string) {
 
 	// if file is newly created, add the column names
 	if fileInfo.Size() == 0 {
-		colNames := []string{"ID", "Task", "Done", "Created"}
+		colNames := []string{"Task", "Done", "Created"}
 
 		err = w.Write(colNames)
 		if err != nil {
@@ -61,7 +44,7 @@ func addFunc(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	record := []string{strconv.Itoa(nextID), args[0], "false", time.Now().Format(time.RFC3339)}
+	record := []string{args[0], "false", time.Now().Format(time.RFC3339)}
 
 	err = w.Write(record)
 	if err != nil {

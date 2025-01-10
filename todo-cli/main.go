@@ -1,7 +1,7 @@
 package main
 
 import (
-	"todo-cli/cmd"
+	"task/cmd"
 )
 
 func main() {
