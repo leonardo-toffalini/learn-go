@@ -1,11 +1,10 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
+	"encoding/csv"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -21,20 +20,62 @@ var addCmd = &cobra.Command{
 }
 
 func addFunc(cmd *cobra.Command, args []string) {
-  f, err := os.OpenFile("todo_list.csv", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
-  if err != nil {
-    fmt.Println("Error opening todo_list.csv file")
-    return
-  }
-  defer f.Close()
+	f, err := os.OpenFile("todo_list.csv", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644) // NOTE: mode shoule be os.ModeAppend
+	if err != nil {
+		fmt.Println("Error opening todo_list.csv file")
+		return
+	}
+	defer f.Close()
 
-  _, err = f.WriteString(args[0] + ",false," + time.Now().Format(time.RFC3339) + "\n")
-  if err != nil {
-    fmt.Println("Error writing `" + args[0] + "` to todo_list.csv", err)
-    return 
-  }
+	w := csv.NewWriter(f)
+	r := csv.NewReader(f)
 
-  fmt.Println("A new todo list item with the following description created succesfully:\n\t'" + args[0] + "'")
+	existingRecords, err := r.ReadAll()
+	if err != nil && err.Error() != "EOF" {
+		fmt.Printf("Error reading file: %v\n", err)
+		return
+	}
+
+	nextID := 1
+	if len(existingRecords) > 0 {
+		lastRow := existingRecords[len(existingRecords)-1]
+		lastID, err := strconv.Atoi(lastRow[0])
+		if err == nil {
+			nextID = lastID + 1
+		}
+	}
+
+	fileInfo, err := f.Stat()
+	if err != nil {
+		fmt.Println("Error getting information of todo_list.csv")
+	}
+
+	// if file is newly created, add the column names
+	if fileInfo.Size() == 0 {
+		colNames := []string{"ID", "Task", "Done", "Created"}
+
+		err = w.Write(colNames)
+		if err != nil {
+			fmt.Println("Error writing column names")
+			return
+		}
+	}
+
+	record := []string{strconv.Itoa(nextID), args[0], "false", time.Now().Format(time.RFC3339)}
+
+	err = w.Write(record)
+	if err != nil {
+		fmt.Println("Error writing into todo_list.csv", args[0])
+		return
+	}
+
+	w.Flush()
+	if err := w.Error(); err != nil {
+		fmt.Println("Error flushing data to CSV file", err)
+		return
+	}
+
+	fmt.Println("A new todo list item with the following description created succesfully:\n\t'" + args[0] + "'")
 }
 
 func init() {

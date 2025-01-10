@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -34,22 +31,22 @@ func listFunc(cmd *cobra.Command, args []string) {
 
 	r := csv.NewReader(strings.NewReader(string(content)))
 	w := tabwriter.NewWriter(os.Stdout, 0, 2, 4, ' ', 0)
-	//
-	fmt.Fprintln(w, "ID\tTask\tDone\tCreated")
 	rows, _ := r.ReadAll()
 
-	for id, row := range rows {
-		t, e := time.Parse(time.RFC3339, row[2]) // absolute time
+	for n, row := range rows {
+		if n == 0 {
+			fmt.Fprintln(w, strings.Join(row, "\t"))
+			continue
+		}
+		t, e := time.Parse(time.RFC3339, row[3]) // absolute time
 		if e != nil {
 			log.Fatal(e)
 		}
 		dt := time.Now().Sub(t) // delta time
 		prettyDt := timediff.TimeDiff(time.Now().Add(-dt))
 
-		fmt.Fprint(w, fmt.Sprint(id+1)+"\t") // ID
-		fmt.Fprint(w, row[0]+"\t")           // Task
-		fmt.Fprint(w, row[1]+"\t")           // Done
-		fmt.Fprint(w, prettyDt+"\t\n")       // Created
+		fmt.Fprint(w, strings.Join(row[:3], "\t")+"\t")
+		fmt.Fprintln(w, prettyDt)
 	}
 
 	w.Flush()
